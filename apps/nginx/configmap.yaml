@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-index
+data:
+  index.html: |
+    <html>
+      <body>
+        <h1>Hello from DevOps Demo! (Updated)</h1>
+      </body>
+    </html>
