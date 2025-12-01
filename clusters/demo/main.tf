@@ -21,8 +21,11 @@ module "eks" {
   min_size       = 1
   max_size       = 3
   desired_size   = 2
-  admin_iam_arn = "arn:aws:iam::048753696790:user/admin-user-cli"
-  allowed_cidr  = "142.112.179.154/32"
+  # Replace <ACCOUNT-ID> and <ADMIN-USER> with your own AWS account ID and IAM user.
+  # The IAM user should have permissions to deploy VPC, EKS, and all required AWS resources.
+  admin_iam_arn = "arn:aws:iam::<ACCOUNT-ID>:user/<ADMIN-USER>"
+  # Replace <YOUR-PUBLIC-IP>/32 with your own public IP. This is required to access the EKS API and ArgoCD UI.
+  allowed_cidr  = "<YOUR-PUBLIC-IP>/32"
 }
 
 variable "enable_argocd" {
@@ -39,7 +42,8 @@ module "argocd" {
   cluster_endpoint = module.eks.cluster_endpoint
   cluster_ca_data  = module.eks.cluster_certificate_authority_data
   namespace        = "argocd"
-  allowed_cidr     = "142.112.179.154/32"
+  # Replace <YOUR-PUBLIC-IP>/32 with your own public IP. This is required to access the EKS API and ArgoCD UI.
+  allowed_cidr     = "<YOUR-PUBLIC-IP>/32"
 
   depends_on = [module.eks]
 }
