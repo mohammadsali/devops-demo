@@ -28,7 +28,7 @@ module "eks" {
 variable "enable_argocd" {
   description = "Flag to enable ArgoCD deployment"
   type        = bool
-  default     = true
+  default     = false
 }
 
 module "argocd" {
@@ -42,31 +42,3 @@ module "argocd" {
 
   depends_on = [module.eks]
 }
-
-#####################
-# Example IRSA (optional)
-#####################
-
-# This is an example of how you'd create an IRSA role for a
-# Kubernetes app in namespace "sample-nginx" with SA "sample-nginx-sa"
-# that needs read-only access to a specific S3 bucket.
-#
-# Uncomment and adjust bucket name to actually use.
-
-# module "irsa_sample_s3_reader" {
-#   source = "../../modules/irsa"
-#
-#   name                 = "dev-s3-reader"
-#   namespace            = "sample-nginx"
-#   service_account_name = "sample-nginx-sa"
-#   oidc_issuer_url      = module.eks.cluster_oidc_issuer_url
-#
-#   policy_json = jsonencode({
-#     Version = "2012-10-17"
-#     Statement = [{
-#       Effect   = "Allow"
-#       Action   = ["s3:GetObject"]
-#       Resource = "arn:aws:s3:::REPLACE_BUCKET_NAME/*"
-#     }]
-#   })
-# }
