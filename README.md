@@ -1,6 +1,24 @@
 # devops-demo
 
-This repository contains everything you need to set up an EKS cluster on AWS, deploy ArgoCD, and onboard applications using GitOps.
+## Solution Overview
+
+This repository shows how to build a robust, automated Kubernetes platform on AWS using EKS, Terraform, and ArgoCD.
+
+The cluster is set up with Terraform, which takes care of all the AWS infrastructure—VPC, networking, IAM roles, and the EKS control plane. Everything is defined as code, so you can recreate or update the environment easily and consistently. Node groups, scaling, and access controls are all managed in the Terraform modules, making the setup secure and repeatable.
+
+We use an S3 bucket as the Terraform backend to store the state file securely and reliably. To prevent concurrent changes and ensure safe operations, DynamoDB is used for state locking. This setup allows multiple team members to collaborate safely and keeps infrastructure changes consistent.
+
+EKS cluster logging is enabled and integrated with AWS CloudWatch, so you can monitor cluster events, audit logs, and troubleshoot issues directly from the AWS console. This provides visibility into cluster operations and helps with compliance and debugging.
+
+For simplicity in this demo, my public IP is added to the allowed list for accessing the EKS API and the ArgoCD UI. This makes it easy to test and manage the cluster from my laptop, but in a real production setup, you would restrict access further or use VPNs and private networking for better security.
+
+After the cluster is running, ArgoCD is installed to bring in GitOps workflows. With ArgoCD, application manifests are stored in a Git repository and any changes are automatically synced to the cluster. This means deployments, updates, and rollbacks are all handled through Git, giving you a clear history and audit trail for every change.
+
+For application onboarding, each app gets its own namespace and its manifests are organized in the repo. The demo app (NGINX) is deployed via ArgoCD, with its configuration managed through ConfigMaps. The app is exposed to the internet using an AWS LoadBalancer, and in production you can set up a custom DNS name for stable access.
+
+This approach combines infrastructure-as-code and GitOps to deliver a secure, scalable, and easy-to-manage platform for cloud-native applications. Everything is automated, versioned, and ready for real-world use.
+
+---
 
 ## EKS Cluster Setup
 
@@ -20,7 +38,7 @@ This repository contains everything you need to set up an EKS cluster on AWS, de
      terraform plan
      terraform apply --auto-approve
      ```
-   - Make sure ArgoCD is disabled (`enable_argocd = false`) for the first apply.
+   - Make sure ArgoCD is disabled (`enable_argocd = false` by default) for the first apply.
 
 4. **Configure kubectl:**
    - Update your kubeconfig:

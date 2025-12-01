@@ -2,21 +2,13 @@
 
 This guide walks you through deploying a demo NGINX app to EKS using ArgoCD and GitOps.
 
-### 1. Create the Namespace
-Create a namespace for your app:
-```sh
-kubectl create namespace demoapp
-```
-
-### 2. Add Your Manifests
+### 1. Add Your Manifests
 Put your Kubernetes manifests in `apps/nginx/`:
 - `deployment.yaml` (mounts a custom index.html from a ConfigMap)
 - `service.yaml` (exposes NGINX via LoadBalancer)
 - `configmap.yaml` (contains your custom index.html)
 
-
-
-### 3. Create the ArgoCD Application Manifest
+### 2. Create the ArgoCD Application Manifest
 Example (`argocd-app.yaml`):
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -43,14 +35,14 @@ Apply the manifest:
 kubectl apply -f apps/nginx/argocd-app.yaml -n argocd
 ```
 
-### 6. Access Your App
+### 3. Access Your App
 Get the external address:
 ```sh
 kubectl get svc -n demoapp
 ```
 Open the EXTERNAL-IP in your browser to see your custom NGINX page.
 
-### 7. Update the Message
+### 4. Update the Message
 Edit `configmap.yaml` and push changes to your repo. ArgoCD will auto-sync and update the NGINX pods with the new message.
 
 ---
