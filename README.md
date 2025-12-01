@@ -71,6 +71,8 @@ This approach combines infrastructure-as-code and GitOps to deliver a secure, sc
    - Enable the ArgoCD module (`enable_argocd = true`) and apply again:
      ```sh
      terraform apply --auto-approve
+     # Or override the variable directly:
+     terraform apply -var="enable_argocd=true" --auto-approve
      ```
    - Get the ArgoCD server LoadBalancer DNS:
      ```sh
