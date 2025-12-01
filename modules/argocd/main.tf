@@ -18,8 +18,8 @@ resource "helm_release" "argocd" {
         type: LoadBalancer
         annotations:
           service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
-          service.beta.kubernetes.io/aws-load-balancer-scheme: "internal"
-
+        loadBalancerSourceRanges:
+            - 142.112.179.154/32
     configs:
       params:
         server.insecure: true

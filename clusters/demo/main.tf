@@ -25,8 +25,15 @@ module "eks" {
   allowed_cidr  = "142.112.179.154/32"
 }
 
+variable "enable_argocd" {
+  description = "Flag to enable ArgoCD deployment"
+  type        = bool
+  default     = true
+}
+
 module "argocd" {
   source = "../../modules/argocd"
+  count  = var.enable_argocd ? 1 : 0
 
   cluster_name     = module.eks.cluster_name
   cluster_endpoint = module.eks.cluster_endpoint
