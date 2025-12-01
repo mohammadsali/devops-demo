@@ -1,43 +1,32 @@
 # devops-demo
 
+This repository contains everything you need to set up an EKS cluster on AWS, deploy ArgoCD, and onboard applications using GitOps.
 
-## Steps to Deploy EKS Cluster
+## EKS Cluster Setup
 
 1. **Prepare Terraform Modules:**
-	 - VPC: `modules/vpc/`
-	 - EKS: `modules/eks/`
-	 - ArgoCD: `modules/argocd/` (do NOT install ArgoCD in the first run)
+   - VPC: `modules/vpc/`
+   - EKS: `modules/eks/`
+   - ArgoCD: `modules/argocd/` (skip ArgoCD on the first run)
 
 2. **Configure Cluster and Networking:**
-	 - Edit `clusters/demo/main.tf` to set:
-		 - Cluster name, version, VPC CIDR, subnets, instance types
-		 - Admin IAM ARN (e.g., `arn:aws:iam::048753696790:user/admin-user-cli`)
-		 - Restrict public access to your IP (e.g., `allowed_cidr = "142.112.179.154/32"`)
+   - Edit `clusters/demo/main.tf` to set cluster name, version, VPC CIDR, subnets, instance types, and your admin IAM ARN.
+   - Restrict public access to your IP (e.g., `allowed_cidr = "your ip/range"`).
 
-3. **Initialize Terraform:**
-	 - In `clusters/demo/`, run:
-		 ```sh
-		 terraform init
-		 ```
+3. **Initialize and Apply Terraform:**
+   - In `clusters/demo/`, run:
+     ```sh
+     terraform init
+     terraform plan
+     terraform apply --auto-approve
+     ```
+   - Make sure ArgoCD is disabled (`enable_argocd = false`) for the first apply.
 
-4. **Review the Plan:**
-	 - In `clusters/demo/`, run:
-		 ```sh
-		 terraform plan
-		 ```
-
-5. **Apply Infrastructure (without ArgoCD):**
-	 - In `clusters/demo/`, run:
-		 ```sh
-		 terraform apply --auto-approve
-		 ```
-	 - Ensure the ArgoCD module is disabled or not included in the first run (e.g., set `enable_argocd = false`).
-
-6. **Update kubeconfig for EKS:**
-	 - Run:
-		 ```sh
-		 aws eks update-kubeconfig --name devops-demo-eks --region ca-central-1
-		 ```
+4. **Configure kubectl:**
+   - Update your kubeconfig:
+     ```sh
+     aws eks update-kubeconfig --name devops-demo-eks --region ca-central-1
+     ```
 
 7. **Grant Kubernetes Access to Your IAM User:**
 	 - Run these AWS CLI commands to create an access entry and associate the admin policy:
@@ -60,79 +49,36 @@
 		 kubectl get ns
 		 ```
 
-8. **Install ArgoCD (after access is confirmed):**
-	 - Enable the ArgoCD module by setting `enable_argocd = true` in `clusters/demo/terraform.tfvars`.
-	 - Alternatively, you can override the variable directly in the CLI:
-		 ```sh
-		 terraform apply -var="enable_argocd=true" --auto-approve
-		 ```
-	 - Run:
-		 ```sh
-		 terraform apply --auto-approve
-		 ```
-	 - Get the ArgoCD server LoadBalancer DNS:
-		 ```sh
-		 kubectl get svc -n argocd argocd-server
-		 ```
-	 - Access the UI in your browser using the external DNS (restricted to your IP).
-
-## Setup Explanation
-
-This setup uses Terraform to provision a secure AWS EKS cluster with GitOps automation via ArgoCD. Infrastructure is modular:
-
-- **Networking:**
-	- VPC, subnets, NAT, and route tables are defined in `modules/vpc/`.
-- **EKS Cluster:**
-	- Cluster, node groups, IAM roles/policies, and encryption are managed in `modules/eks/`.
-	- Admin access is granted using AWS native access entries and policies, configured in `clusters/demo/main.tf`.
-- **ArgoCD Deployment:**
-	- ArgoCD is installed via `modules/argocd/` and exposed through a public load balancer (restricted to your IP).
-
-## Application Onboarding with ArgoCD (apps)
-
-1. **Create a Namespace for the Application:**
-   - Example:
-     ```yaml
-     apiVersion: v1
-     kind: Namespace
-     metadata:
-       name: nginx
-     ```
-   - Apply with:
+6. **Install ArgoCD:**
+   - Enable the ArgoCD module (`enable_argocd = true`) and apply again:
      ```sh
-     kubectl apply -f <namespace-manifest>.yaml
-     # or
-     kubectl create namespace nginx
+     terraform apply --auto-approve
      ```
-
-2. **Set Up IAM Role for Service Account (IRSA) [if needed]:**
-   - Create an IAM role in AWS with required policies.
-   - Annotate a Kubernetes ServiceAccount with the IAM role ARN:
-     ```yaml
-     apiVersion: v1
-     kind: ServiceAccount
-     metadata:
-       name: nginx-sa
-       namespace: nginx
-       annotations:
-         eks.amazonaws.com/role-arn: arn:aws:iam::<account-id>:role/<role-name>
+   - Get the ArgoCD server LoadBalancer DNS:
+     ```sh
+     kubectl get svc -n argocd argocd-server
      ```
-   - Reference the ServiceAccount in your Deployment manifest:
-     ```yaml
-     spec:
-       serviceAccountName: nginx-sa
-     ```
+   - Access the ArgoCD UI in your browser using the external DNS (access is restricted to your IP).
 
-3. **Prepare Application Manifests or Helm Chart:**
-   - Place your manifests (e.g., `deployment.yaml`, `service.yaml`) or Helm chart in `apps/<app-name>/`.
+---
 
-4. **Create ArgoCD Application Manifest:**
-   - Example for Git-based onboarding:
+## Application Onboarding with ArgoCD
+
+1. **Create a Namespace for Your App:**
+   ```sh
+   kubectl create namespace demoapp
+   ```
+
+2. **Add Your App Manifests:**
+   - Place your manifests (e.g., `deployment.yaml`, `service.yaml`, `configmap.yaml`) in `apps/nginx/`.
+
+3. **Create the ArgoCD Application Manifest:**
+   - Example (`argocd-app.yaml`):
      ```yaml
      apiVersion: argoproj.io/v1alpha1
      kind: Application
      metadata:
-       name: nginx
+       name: demoapp
        namespace: argocd
      spec:
        project: default
@@ -142,7 +88,7 @@ This setup uses Terraform to provision a secure AWS EKS cluster with GitOps auto
          path: apps/nginx
        destination:
          server: https://kubernetes.default.svc
-         namespace: nginx
+         namespace: demoapp
        syncPolicy:
          automated:
            prune: true
@@ -153,13 +99,20 @@ This setup uses Terraform to provision a secure AWS EKS cluster with GitOps auto
      kubectl apply -f apps/nginx/argocd-app.yaml -n argocd
      ```
 
-5. **RBAC, Quotas, and Network Policies:**
-   - (Optional) Set up RBAC, resource quotas, and network policies for the namespace as needed.
-
-6. **Monitor and Sync:**
+4. **Monitor and Sync:**
    - Use the ArgoCD UI to monitor, sync, and manage your application.
+
+5. **Access Your App:**
+   - Get the external address:
+     ```sh
+     kubectl get svc -n demoapp
+     ```
+   - Open the EXTERNAL-IP in your browser to see your app.
+
+6. **Update the App:**
+   - Edit your manifests and push changes to your repo.
+   - ArgoCD will auto-sync and update the pods with your changes.
 
 ---
 
-Add your application manifests and onboarding instructions in the `apps/` directory for each new app.
-
+For more details, see the `apps/README.md` in this repo.
