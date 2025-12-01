@@ -39,6 +39,7 @@ module "argocd" {
   cluster_endpoint = module.eks.cluster_endpoint
   cluster_ca_data  = module.eks.cluster_certificate_authority_data
   namespace        = "argocd"
+  allowed_cidr     = "142.112.179.154/32"
 
   depends_on = [module.eks]
 }

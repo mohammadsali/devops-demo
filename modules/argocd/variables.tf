@@ -14,3 +14,8 @@ variable "namespace" {
   type    = string
   default = "argocd"
 }
+
+variable "allowed_cidr" {
+  description = "CIDR block allowed to access ArgoCD UI"
+  type        = string
+}

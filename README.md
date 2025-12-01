@@ -1,4 +1,3 @@
-
 # devops-demo
 
 
@@ -61,7 +60,6 @@
 		 kubectl get ns
 		 ```
 
-
 8. **Install ArgoCD (after access is confirmed):**
 	 - Enable the ArgoCD module by setting `enable_argocd = true` in `clusters/demo/terraform.tfvars`.
 	 - Alternatively, you can override the variable directly in the CLI:
@@ -78,10 +76,6 @@
 		 ```
 	 - Access the UI in your browser using the external DNS (restricted to your IP).
 
-**Note:**
-- The `enable_argocd` variable defaults to `false` in `clusters/demo/main.tf`.
-- You can override it in `terraform.tfvars` or via the CLI for flexible ArgoCD installation control.
-
 ## Setup Explanation
 
 This setup uses Terraform to provision a secure AWS EKS cluster with GitOps automation via ArgoCD. Infrastructure is modular:
@@ -93,4 +87,79 @@ This setup uses Terraform to provision a secure AWS EKS cluster with GitOps auto
 	- Admin access is granted using AWS native access entries and policies, configured in `clusters/demo/main.tf`.
 - **ArgoCD Deployment:**
 	- ArgoCD is installed via `modules/argocd/` and exposed through a public load balancer (restricted to your IP).
+
+## Application Onboarding with ArgoCD (apps)
+
+1. **Create a Namespace for the Application:**
+   - Example:
+     ```yaml
+     apiVersion: v1
+     kind: Namespace
+     metadata:
+       name: nginx
+     ```
+   - Apply with:
+     ```sh
+     kubectl apply -f <namespace-manifest>.yaml
+     # or
+     kubectl create namespace nginx
+     ```
+
+2. **Set Up IAM Role for Service Account (IRSA) [if needed]:**
+   - Create an IAM role in AWS with required policies.
+   - Annotate a Kubernetes ServiceAccount with the IAM role ARN:
+     ```yaml
+     apiVersion: v1
+     kind: ServiceAccount
+     metadata:
+       name: nginx-sa
+       namespace: nginx
+       annotations:
+         eks.amazonaws.com/role-arn: arn:aws:iam::<account-id>:role/<role-name>
+     ```
+   - Reference the ServiceAccount in your Deployment manifest:
+     ```yaml
+     spec:
+       serviceAccountName: nginx-sa
+     ```
+
+3. **Prepare Application Manifests or Helm Chart:**
+   - Place your manifests (e.g., `deployment.yaml`, `service.yaml`) or Helm chart in `apps/<app-name>/`.
+
+4. **Create ArgoCD Application Manifest:**
+   - Example for Git-based onboarding:
+     ```yaml
+     apiVersion: argoproj.io/v1alpha1
+     kind: Application
+     metadata:
+       name: nginx
+       namespace: argocd
+     spec:
+       project: default
+       source:
+         repoURL: https://github.com/your-username/your-repo.git
+         targetRevision: develop
+         path: apps/nginx
+       destination:
+         server: https://kubernetes.default.svc
+         namespace: nginx
+       syncPolicy:
+         automated:
+           prune: true
+           selfHeal: true
+     ```
+   - Apply with:
+     ```sh
+     kubectl apply -f apps/nginx/argocd-app.yaml -n argocd
+     ```
+
+5. **RBAC, Quotas, and Network Policies:**
+   - (Optional) Set up RBAC, resource quotas, and network policies for the namespace as needed.
+
+6. **Monitor and Sync:**
+   - Use the ArgoCD UI to monitor, sync, and manage your application.
+
+---
+
+Add your application manifests and onboarding instructions in the `apps/` directory for each new app.
 
