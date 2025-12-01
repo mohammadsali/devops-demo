@@ -46,26 +46,26 @@ This approach combines infrastructure-as-code and GitOps to deliver a secure, sc
      aws eks update-kubeconfig --name devops-demo-eks --region ca-central-1
      ```
 
-7. **Grant Kubernetes Access to Your IAM User:**
-	 - Run these AWS CLI commands to create an access entry and associate the admin policy:
-		 ```sh
-		 aws eks create-access-entry \
-			 --cluster-name devops-demo-eks \
-			 --principal-arn arn:aws:iam::<ACCOUNT-ID>:user/admin-user-cli \
-			 --type STANDARD
+5. **Grant Kubernetes Access to Your IAM User:**
+   - Run these AWS CLI commands to create an access entry and associate the admin policy:
+     ```sh
+     aws eks create-access-entry \
+       --cluster-name devops-demo-eks \
+       --principal-arn arn:aws:iam::<ACCOUNT-ID>:user/<ADMIN-USER> \
+       --type STANDARD
 
-		 aws eks associate-access-policy \
-			 --cluster-name devops-demo-eks \
-			 --principal-arn arn:aws:iam::<ACCOUNT-ID>:user/admin-user-cli \
-			 --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy \
-			 --access-scope type=cluster
-		 ```
-	 - Replace `<ACCOUNT-ID>` with your AWS account ID.
-	 - Wait a few minutes for the changes to propagate.
-	 - Test access:
-		 ```sh
-		 kubectl get ns
-		 ```
+     aws eks associate-access-policy \
+       --cluster-name devops-demo-eks \
+       --principal-arn arn:aws:iam::<ACCOUNT-ID>:user/<ADMIN-USER> \
+       --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy \
+       --access-scope type=cluster
+     ```
+   - Replace `<ACCOUNT-ID>` and `<ADMIN-USER>` with your AWS account ID and IAM user.
+   - Wait a few minutes for the changes to propagate.
+   - Test access:
+     ```sh
+     kubectl get ns
+     ```
 
 6. **Install ArgoCD:**
    - Enable the ArgoCD module (`enable_argocd = true`) and apply again:
@@ -79,6 +79,17 @@ This approach combines infrastructure-as-code and GitOps to deliver a secure, sc
      kubectl get svc -n argocd argocd-server
      ```
    - Access the ArgoCD UI in your browser using the external DNS (access is restricted to your IP).
+   
+
+7. **Get the ArgoCD Admin Password:**
+
+	- After deploying ArgoCD, run the following command to get the initial admin password:
+
+	```sh
+	kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode
+	```
+
+	- Use username `admin` and the password from above to log in to the ArgoCD UI.
 
 ---
 
@@ -133,6 +144,6 @@ This approach combines infrastructure-as-code and GitOps to deliver a secure, sc
    - Edit your manifests and push changes to your repo.
    - ArgoCD will auto-sync and update the pods with your changes.
 
----
+
 
 For more details, see the `apps/README.md` in this repo.
