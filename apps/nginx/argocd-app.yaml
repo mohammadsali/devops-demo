@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/mohammadsali/devops-demo.git
     targetRevision: develop
-    path: .
+    path: apps/nginx
   destination:
     server: https://kubernetes.default.svc
     namespace: demoapp
