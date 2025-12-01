@@ -6,9 +6,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: local://apps/nginx
+    repoURL: https://github.com/mohammadsali/devops-demo.git
+    targetRevision: develop
     path: .
-    targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc
     namespace: demoapp
